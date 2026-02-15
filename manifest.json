@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "YT Overuse Tracker",
+  "version": "3.0",
+  "permissions": ["storage", "alarms", "tabs"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content.js"],
+      "css": ["style.css"]
+    }
+  ]
+}
