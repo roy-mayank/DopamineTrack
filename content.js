@@ -8,7 +8,7 @@ hud.innerHTML = `
         <div id="battery-fill"></div>
         <span id="stat-text">100%</span>
     </div>
-    <button id="mode-toggle">🎧/💼</button>
+    <button id="mode-toggle">🎧💼</button>
 `;
 document.body.appendChild(hud);
 
