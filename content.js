@@ -25,6 +25,7 @@ chrome.storage.local.get(["savedBattery", "hudPos", "isWorkMode"], (res) => {
     hud.style.right = "auto";
   }
   updateModeUI(res.isWorkMode);
+  updateUI(res);
 });
 
 // Draggability Logic
@@ -110,10 +111,10 @@ function updateUI(res) {
   }
 }
 
-// Check state every 5 seconds (Optimized for performance)
+// Check state every second
 setInterval(() => {
   chrome.storage.local.get(["savedBattery", "isWorkMode"], updateUI);
-}, 5000);
+}, 1000);
 
 function showMission() {
   const missions = [
