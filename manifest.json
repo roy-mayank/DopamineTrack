@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "YT Overuse Tracker",
+  "name": "YT Time Tracker",
   "version": "3.0",
   "permissions": ["storage", "alarms", "tabs"],
   "background": {
@@ -8,7 +8,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://*.youtube.com/*"],
+      "matches": ["*://*.youtube.com/*", "*://*.123series.stream/*"],
       "js": ["content.js"],
       "css": ["style.css"]
     }

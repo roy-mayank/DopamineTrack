@@ -1,22 +1,42 @@
+function todayString() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.set({ savedBattery: 100, isWorkMode: false });
+  const usageByHour = Array(24).fill(0);
+  chrome.storage.local.set({
+    usageDate: todayString(),
+    usageByHour,
+    grayscaleUserDisabled: false,
+  });
 });
 
-chrome.alarms.create("batteryTick", { periodInMinutes: 1 });
+chrome.alarms.create("usageTick", { periodInMinutes: 1 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  chrome.storage.local.get(["savedBattery", "isWorkMode"], (res) => {
-    let battery = res.savedBattery ?? 100; // Backup
-    let isWorkMode = res.isWorkMode ?? false;
+  if (alarm.name !== "usageTick") return;
+  const now = new Date();
+  const today = todayString();
+  const currentHour = now.getHours();
 
-    chrome.tabs.query({ url: "*://*.youtube.com/*" }, (tabs) => {
+  chrome.storage.local.get(["usageDate", "usageByHour"], (res) => {
+    let usageDate = res.usageDate ?? today;
+    let usageByHour = Array.isArray(res.usageByHour) && res.usageByHour.length === 24
+      ? [...res.usageByHour]
+      : Array(24).fill(0);
+
+    if (usageDate !== today) {
+      usageDate = today;
+      usageByHour = Array(24).fill(0);
+    }
+
+    chrome.tabs.query({ url: ["*://*.youtube.com/*", "*://*.123series.stream/*"] }, (tabs) => {
       const hasYT = tabs.length > 0;
-      if (!hasYT || isWorkMode) {
-        battery = Math.min(100, battery + 1.66);
-      } else {
-        battery = Math.max(0, battery - 3.33);
+      if (hasYT) {
+        usageByHour[currentHour] = (usageByHour[currentHour] || 0) + 1;
       }
-      chrome.storage.local.set({ savedBattery: battery });
+      chrome.storage.local.set({ usageDate, usageByHour });
     });
   });
 });
