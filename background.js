@@ -3,12 +3,17 @@ function todayString() {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
 
+function zeros24() {
+  return Array(24).fill(0);
+}
+
 chrome.runtime.onInstalled.addListener(() => {
-  const usageByHour = Array(24).fill(0);
   chrome.storage.local.set({
     usageDate: todayString(),
-    usageByHour,
+    usageByHourMusic: zeros24(),
+    usageByHourEntertainment: zeros24(),
     grayscaleUserDisabled: false,
+    isMusicMode: false,
   });
 });
 
@@ -20,23 +25,50 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   const today = todayString();
   const currentHour = now.getHours();
 
-  chrome.storage.local.get(["usageDate", "usageByHour"], (res) => {
-    let usageDate = res.usageDate ?? today;
-    let usageByHour = Array.isArray(res.usageByHour) && res.usageByHour.length === 24
-      ? [...res.usageByHour]
-      : Array(24).fill(0);
+  chrome.storage.local.get(
+    ["usageDate", "usageByHour", "usageByHourMusic", "usageByHourEntertainment", "isMusicMode"],
+    (res) => {
+      let usageDate = res.usageDate ?? today;
+      let usageByHourMusic = Array.isArray(res.usageByHourMusic) && res.usageByHourMusic.length === 24
+        ? [...res.usageByHourMusic]
+        : null;
+      let usageByHourEntertainment = Array.isArray(res.usageByHourEntertainment) && res.usageByHourEntertainment.length === 24
+        ? [...res.usageByHourEntertainment]
+        : null;
 
-    if (usageDate !== today) {
-      usageDate = today;
-      usageByHour = Array(24).fill(0);
-    }
-
-    chrome.tabs.query({ url: ["*://*.youtube.com/*", "*://*.123series.stream/*"] }, (tabs) => {
-      const hasYT = tabs.length > 0;
-      if (hasYT) {
-        usageByHour[currentHour] = (usageByHour[currentHour] || 0) + 1;
+      if (usageByHourMusic === null || usageByHourEntertainment === null) {
+        if (Array.isArray(res.usageByHour) && res.usageByHour.length === 24) {
+          usageByHourEntertainment = [...res.usageByHour];
+          usageByHourMusic = zeros24();
+        } else {
+          usageByHourMusic = zeros24();
+          usageByHourEntertainment = zeros24();
+        }
       }
-      chrome.storage.local.set({ usageDate, usageByHour });
-    });
-  });
+
+      if (usageDate !== today) {
+        usageDate = today;
+        usageByHourMusic = zeros24();
+        usageByHourEntertainment = zeros24();
+      }
+
+      const isMusicMode = res.isMusicMode ?? false;
+
+      chrome.tabs.query({ url: ["*://*.youtube.com/*", "*://*.123series.stream/*"] }, (tabs) => {
+        const hasYT = tabs.length > 0;
+        if (hasYT) {
+          if (isMusicMode) {
+            usageByHourMusic[currentHour] = (usageByHourMusic[currentHour] || 0) + 1;
+          } else {
+            usageByHourEntertainment[currentHour] = (usageByHourEntertainment[currentHour] || 0) + 1;
+          }
+        }
+        chrome.storage.local.set({
+          usageDate,
+          usageByHourMusic,
+          usageByHourEntertainment,
+        });
+      });
+    }
+  );
 });
