@@ -42,6 +42,12 @@ const canvas = document.getElementById("usage-graph");
 
 let graphOpen = false;
 
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg.type !== "isVideoPlaying") return;
+  const video = document.querySelector("video");
+  sendResponse({ playing: video ? !video.paused : false });
+});
+
 // Load saved state
 chrome.storage.local.get(
   ["hudPos", "usageDate", "usageByHourMusic", "usageByHourEntertainment", "grayscaleUserDisabled", "isMusicMode"],

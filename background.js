@@ -55,18 +55,35 @@ chrome.alarms.onAlarm.addListener((alarm) => {
       const isMusicMode = res.isMusicMode ?? false;
 
       chrome.tabs.query({ url: ["*://*.youtube.com/*", "*://*.123series.stream/*"] }, (tabs) => {
-        const hasYT = tabs.length > 0;
-        if (hasYT) {
-          if (isMusicMode) {
-            usageByHourMusic[currentHour] = (usageByHourMusic[currentHour] || 0) + 1;
-          } else {
-            usageByHourEntertainment[currentHour] = (usageByHourEntertainment[currentHour] || 0) + 1;
-          }
+        if (tabs.length === 0) {
+          chrome.storage.local.set({
+            usageDate,
+            usageByHourMusic,
+            usageByHourEntertainment,
+          });
+          return;
         }
-        chrome.storage.local.set({
-          usageDate,
-          usageByHourMusic,
-          usageByHourEntertainment,
+        let pending = tabs.length;
+        let hasPlaying = false;
+        tabs.forEach((tab) => {
+          chrome.tabs.sendMessage(tab.id, { type: "isVideoPlaying" }, (res) => {
+            if (!chrome.runtime.lastError && res && res.playing) hasPlaying = true;
+            pending--;
+            if (pending === 0) {
+              if (hasPlaying) {
+                if (isMusicMode) {
+                  usageByHourMusic[currentHour] = (usageByHourMusic[currentHour] || 0) + 1;
+                } else {
+                  usageByHourEntertainment[currentHour] = (usageByHourEntertainment[currentHour] || 0) + 1;
+                }
+              }
+              chrome.storage.local.set({
+                usageDate,
+                usageByHourMusic,
+                usageByHourEntertainment,
+              });
+            }
+          });
         });
       });
     }
